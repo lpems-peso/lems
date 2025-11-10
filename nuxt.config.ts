@@ -11,7 +11,10 @@ export default defineNuxtConfig({
     ],
   },
 
-  modules: ['@nuxt/ui', '@nuxtjs/supabase', '@vueuse/nuxt'],
+  modules: [
+    '@nuxt/ui', 
+    '@nuxtjs/supabase', 
+    '@vueuse/nuxt'],
 
   supabase: {
     types: '~/server/database.types.ts',
