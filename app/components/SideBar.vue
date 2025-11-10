@@ -13,17 +13,7 @@ const showProgramSubmenu = computed(() =>
   <aside class="hidden lg:flex w-64 bg-[#1b2b39] text-white flex-col min-h-screen">
     <nav class="flex-1 p-4 space-y-2">
 
-      <!-- Dashboard -->
-      <NuxtLink
-        to="/admin/dashboard"
-        :class="[
-          'block rounded-md py-2 px-3 transition-colors duration-200',
-          isActive('/admin/dashboard') ? 'bg-teal-500 text-white' : 'hover:bg-gray-700 text-gray-200'
-        ]"
-      >
-        Admin Dashboard
-      </NuxtLink>
-
+    
       <!-- User Management -->
       <NuxtLink
         to="/admin/user-management"

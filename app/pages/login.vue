@@ -31,7 +31,7 @@ const userDataRef = ref<UserData | null>(null)
 // --- Redirect helper ---
 function redirectByRole(role: string) {
   role = role.toLowerCase()
-  if (role === 'admin') navigateTo('/admin/dashboard')
+  if (role === 'admin') navigateTo('/admin/user-management')
   else if (role === 'trainer') navigateTo('/trainer/dashboard')
   else navigateTo('/trainee/dashboard')
 }

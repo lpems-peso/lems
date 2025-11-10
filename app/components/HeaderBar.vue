@@ -98,14 +98,6 @@ async function logout() {
             class="absolute left-0 top-full mt-2 w-64 bg-[#1b2b39] text-white rounded-md shadow-lg ring-1 ring-gray-600 z-40 max-h-96 overflow-y-auto"
           >
             <nav class="p-4 space-y-2">
-              <!-- Dashboard -->
-              <NuxtLink
-                to="/admin/dashboard"
-                class="block rounded-md py-2 px-3 hover:bg-gray-700 text-gray-200 transition-colors duration-200"
-                @click="sidebarOpen = false"
-              >
-                Admin Dashboard
-              </NuxtLink>
 
               <!-- User Management -->
               <NuxtLink
