@@ -5,19 +5,34 @@ const router = useRouter()
 
 // State
 const dropdownOpen = ref(false)
+const sidebarOpen = ref(false)
 const dropdownContainer = ref(null)
+const sidebarContainer = ref(null)
 
-// Emits
+// Emits (if still needed for parent component)
 const emit = defineEmits(['toggle-sidebar'])
+
+const toggleSidebar = () => {
+  sidebarOpen.value = !sidebarOpen.value
+  emit('toggle-sidebar', sidebarOpen.value)
+}
 
 // Methods
 function toggleDropdown() {
   dropdownOpen.value = !dropdownOpen.value
 }
 
-// Close dropdown when clicking outside using VueUse
+function toggleSidebarMenu() {
+  sidebarOpen.value = !sidebarOpen.value
+}
+
+// Close dropdowns when clicking outside using VueUse
 onClickOutside(dropdownContainer, () => {
   dropdownOpen.value = false
+})
+
+onClickOutside(sidebarContainer, () => {
+  sidebarOpen.value = false
 })
 
 async function logout() {
@@ -57,22 +72,89 @@ async function logout() {
   >
     <!-- 🔹 Left side: Burger + Logo + Title -->
     <div class="flex items-center space-x-3">
-      <!-- 🍔 Burger Icon -->
-      <button
-        class="lg:hidden text-white focus:outline-none"
-        @click="emit('toggle-sidebar')"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="w-7 h-7"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="2"
+      <!-- 🍔 Burger Icon with Sidebar Dropdown -->
+      <div ref="sidebarContainer" class="relative">
+        <button
+          class="lg:hidden text-white focus:outline-none"
+          @click="toggleSidebarMenu"
         >
-          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-      </button>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-7 h-7"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+
+
+        <!-- Sidebar Dropdown Menu -->
+        <transition name="fade">
+          <div
+            v-if="sidebarOpen"
+            class="absolute left-0 top-full mt-2 w-64 bg-[#1b2b39] text-white rounded-md shadow-lg ring-1 ring-gray-600 z-40 max-h-96 overflow-y-auto"
+          >
+            <nav class="p-4 space-y-2">
+              <!-- Dashboard -->
+              <NuxtLink
+                to="/admin/dashboard"
+                class="block rounded-md py-2 px-3 hover:bg-gray-700 text-gray-200 transition-colors duration-200"
+                @click="sidebarOpen = false"
+              >
+                Admin Dashboard
+              </NuxtLink>
+
+              <!-- User Management -->
+              <NuxtLink
+                to="/admin/user-management"
+                class="block rounded-md py-2 px-3 hover:bg-gray-700 text-gray-200 transition-colors duration-200"
+                @click="sidebarOpen = false"
+              >
+                User Management
+              </NuxtLink>
+
+              <!-- Enrollment Management -->
+              <NuxtLink
+                to="#"
+                class="block rounded-md py-2 px-3 hover:bg-gray-700 text-gray-200 transition-colors duration-200"
+                @click="sidebarOpen = false"
+              >
+                Enrollment Management
+              </NuxtLink>
+
+              <!-- Reports -->
+              <NuxtLink
+                to="#"
+                class="block rounded-md py-2 px-3 hover:bg-gray-700 text-gray-200 transition-colors duration-200"
+                @click="sidebarOpen = false"
+              >
+                Reports & Monitoring
+              </NuxtLink>
+
+              <!-- Program Management -->
+              <NuxtLink
+                to="/admin/program-management"
+                class="block rounded-md py-2 px-3 hover:bg-gray-700 text-gray-200 transition-colors duration-200"
+                @click="sidebarOpen = false"
+              >
+                Program Management
+              </NuxtLink>
+
+              <!-- System Management -->
+              <NuxtLink
+                to="#"
+                class="block rounded-md py-2 px-3 hover:bg-gray-700 text-gray-200 transition-colors duration-200"
+                @click="sidebarOpen = false"
+              >
+                System Management
+              </NuxtLink>
+            </nav>
+          </div>
+        </transition>
+      </div>
 
       <!-- 🧩 Logo -->
       <img
@@ -91,7 +173,7 @@ async function logout() {
       </h1>
     </div>
 
-    <!-- 🔹 Right side:Notification + Profile -->
+    <!-- 🔹 Right side: Notification + Profile -->
     <div class="flex items-center space-x-4 text-sm relative">
       
       <!-- 🔔 Notification -->
@@ -138,7 +220,7 @@ async function logout() {
 </template>
 
 <style scoped>
-/* Smooth fade for floating search */
+/* Smooth fade for dropdowns */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.2s ease, transform 0.2s ease;
