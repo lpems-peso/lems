@@ -11,11 +11,17 @@ export default defineNuxtConfig({
     ],
   },
 
-   modules: ['@nuxt/ui', '@nuxtjs/supabase'],
+  modules: ['@nuxt/ui', '@nuxtjs/supabase', '@vueuse/nuxt'],
 
-   supabase: {
-  types: '~/server/database.types.ts',
-   redirect: false,
-}
+  supabase: {
+    types: '~/server/database.types.ts',
+    redirectOptions: { // Note: redirectOptions instead of redirect
+      login: '/login',
+      callback: '/callback'
+    }
+  },
 
+  vueuse: {
+    ssrHandlers: true,
+  },
 })
