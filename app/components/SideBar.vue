@@ -33,13 +33,6 @@ const showProgramSubmenu = computed(() =>
         Enrollment Management
       </NuxtLink>
 
-      <!-- Reports -->
-      <NuxtLink
-        to="#"
-        class="block hover:bg-gray-700 rounded-md py-2 px-3 text-gray-200 transition-colors duration-200"
-      >
-        Reports & Monitoring
-      </NuxtLink>
 
       <!-- Program Management -->
       <div>
@@ -49,8 +42,8 @@ const showProgramSubmenu = computed(() =>
           :class="[
             'block rounded-md py-2 px-3 transition-colors duration-200',
             (isActive('/admin/program-management') || route.path.startsWith('/admin/archived-programs'))
-              ? 'bg-teal-500 text-white'
-              : 'hover:bg-gray-700 text-gray-200'
+            ? 'bg-teal-500 text-white'
+            : 'hover:bg-gray-700 text-gray-200'
           ]"
         >
           Program Management
@@ -71,8 +64,8 @@ const showProgramSubmenu = computed(() =>
               :class="[
                 'block rounded-md py-2 px-3 text-sm transition-colors duration-200',
                 isActive('/admin/archived-programs')
-                  ? 'bg-teal-600 text-white'
-                  : 'hover:bg-gray-700 text-gray-300'
+                ? 'bg-teal-600 text-white'
+                : 'hover:bg-gray-700 text-gray-300'
               ]"
             >
               📦 Archived Programs
@@ -81,6 +74,15 @@ const showProgramSubmenu = computed(() =>
         </Transition>
       </div>
 
+     <!-- Reports -->
+       <NuxtLink
+        to="#"
+        class="block hover:bg-gray-700 rounded-md py-2 px-3 text-gray-200 transition-colors duration-200"
+         >
+              Reports & Monitoring
+       </NuxtLink>
+
+       
       <!-- System Management -->
       <NuxtLink
         to="#"

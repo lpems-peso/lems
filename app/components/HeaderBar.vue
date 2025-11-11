@@ -117,24 +117,25 @@ async function logout() {
                 Enrollment Management
               </NuxtLink>
 
-              <!-- Reports -->
-              <NuxtLink
-                to="#"
-                class="block rounded-md py-2 px-3 hover:bg-gray-700 text-gray-200 transition-colors duration-200"
-                @click="sidebarOpen = false"
-              >
-                Reports & Monitoring
-              </NuxtLink>
-
+              
               <!-- Program Management -->
               <NuxtLink
-                to="/admin/program-management"
-                class="block rounded-md py-2 px-3 hover:bg-gray-700 text-gray-200 transition-colors duration-200"
-                @click="sidebarOpen = false"
+              to="/admin/program-management"
+              class="block rounded-md py-2 px-3 hover:bg-gray-700 text-gray-200 transition-colors duration-200"
+              @click="sidebarOpen = false"
               >
-                Program Management
-              </NuxtLink>
-
+              Program Management
+            </NuxtLink>
+            
+            <!-- Reports -->
+            <NuxtLink
+              to="#"
+              class="block rounded-md py-2 px-3 hover:bg-gray-700 text-gray-200 transition-colors duration-200"
+              @click="sidebarOpen = false"
+            >
+              Reports & Monitoring
+            </NuxtLink>
+            
               <!-- System Management -->
               <NuxtLink
                 to="#"
