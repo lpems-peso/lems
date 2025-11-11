@@ -8,9 +8,6 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    defaults:
-      run:
-        working-directory: fronted
 
     steps:
       - uses: actions/checkout@v4
@@ -25,7 +22,6 @@ jobs:
         with:
           node-version: 22
           cache: 'pnpm'
-          cache-dependency-path: fronted/pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install
@@ -36,5 +32,4 @@ jobs:
       - name: Build & Deploy to NuxtHub
         uses: nuxt-hub/action@v2
         with:
-          project-key: peso-lems-iybi
-          directory: fronted
+          project-key: lems-xhnc
