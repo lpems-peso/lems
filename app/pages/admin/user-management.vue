@@ -50,7 +50,6 @@ const fetchUsers = async () => {
 // ==================== MODAL CONTROLS ====================
 const openArchiveModal = async () => {
   showArchiveModal.value = true
-
 }
 
 const closeArchiveModal = () => {
@@ -183,7 +182,6 @@ const restoreUser = async (user: ArchivedUser) => {
     if (deleteError) throw deleteError
 
     Swal.fire('Restored!', 'User has been restored successfully.', 'success')
-    await fetchArchivedUsers() // Refresh archived users list
     await fetchUsers() // Refresh active users list
   } catch (error) {
     console.error('Error restoring user:', error)

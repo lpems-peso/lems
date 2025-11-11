@@ -27,4 +27,7 @@ export default defineNuxtConfig({
   vueuse: {
     ssrHandlers: true,
   },
+
+  runtimeConfig: {
+    supabaseServiceKey: process.env.SUPABASE_SERVICE_ROLE_KEY,},
 })
