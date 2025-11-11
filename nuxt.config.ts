@@ -30,4 +30,9 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     supabaseServiceKey: process.env.SUPABASE_SERVICE_ROLE_KEY,},
+
+    nitro: {
+      preset: 'cloudflare',
+    },
+
 })
