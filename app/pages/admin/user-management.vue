@@ -2,17 +2,22 @@
 // ==================== IMPORTS ====================
 import { FolderArchive, UserPlus, SquarePen, Trash } from 'lucide-vue-next'
 import Swal from 'sweetalert2'
+import type { Database } from '~/server/database.types'
+
+// ==================== TYPES ====================
+type User = Database['public']['Tables']['users']['Row']
+type ArchivedUser = Database['public']['Tables']['archive_users']['Row']
 
 // ==================== STATE ====================
-const users = ref<any[]>([])
+const users = ref<User[]>([])
 const isSidebarOpen = ref(false)
-const selectedRole = ref('all')
+const selectedRole = ref<'all' | 'trainer' | 'trainee'>('all')
 const showAddModal = ref(false)
 const showArchiveModal = ref(false)
-const archivedUsers = ref<any[]>([])
+const archivedUsers = ref<ArchivedUser[]>([])
 const searchQuery = ref('')
 const showEditModal = ref(false)
-const selectedUser = ref<any>(null)
+const selectedUser = ref<User | null>(null)
 
 // ==================== SUPABASE CLIENT ====================
 const supabase = useSupabaseClient()
@@ -40,26 +45,12 @@ const fetchUsers = async () => {
 }
 
 // ==================== FETCH ARCHIVED USERS ====================
-const fetchArchivedUsers = async () => {
-  try {
-    const { data, error } = await supabase
-      .from('archive_users') // Changed to archive_users table
-      .select('*')
-      .order('created_at', { ascending: false })
 
-    if (error) throw error
-
-    archivedUsers.value = data || []
-  } catch (err) {
-    console.error('Error fetching archived users:', err)
-    Swal.fire('Error', 'Failed to fetch archived users', 'error')
-  }
-}
 
 // ==================== MODAL CONTROLS ====================
 const openArchiveModal = async () => {
   showArchiveModal.value = true
-  await fetchArchivedUsers()
+
 }
 
 const closeArchiveModal = () => {
@@ -67,7 +58,7 @@ const closeArchiveModal = () => {
 }
 
 // ==================== ARCHIVE USER ====================
-const archiveUser = async (user: any) => {
+const archiveUser = async (user: User) => {
   const confirm = await Swal.fire({
     title: 'Are you sure?',
     text: 'This user will be archived.',
@@ -82,20 +73,24 @@ const archiveUser = async (user: any) => {
 
   try {
     // First, insert the user into archive_users table
-    const { error: archiveError } = await supabase
+    const { data: archiveData, error: archiveError } = await supabase
       .from('archive_users')
-      .insert([
-        {
-          id: user.id,
-          email: user.email,
-          full_name: user.full_name,
-          role: user.role,
-          created_at: user.created_at,
-          archived_at: new Date().toISOString() // Add archive timestamp
-        }
-      ])
+      .insert({
+        id: user.id,
+        email: user.email,
+        full_name: user.full_name,
+        role: user.role,
+        program: user.program,
+        other_program: user.other_program,
+        created_at: user.created_at,
+        archived_at: new Date().toISOString()
+      })
+      .select()
 
-    if (archiveError) throw archiveError
+    if (archiveError) {
+      console.error('Archive error:', archiveError)
+      throw archiveError
+    }
 
     // Then, delete the user from the main users table
     const { error: deleteError } = await supabase
@@ -103,18 +98,21 @@ const archiveUser = async (user: any) => {
       .delete()
       .eq('id', user.id)
 
-    if (deleteError) throw deleteError
+    if (deleteError) {
+      console.error('Delete error:', deleteError)
+      throw deleteError
+    }
 
     Swal.fire('Archived!', 'User has been archived successfully.', 'success')
     await fetchUsers() // Refresh the active users list
   } catch (error) {
     console.error('Error archiving user:', error)
-    Swal.fire('Error', 'Failed to archive user', 'error')
+    Swal.fire('Error', `Failed to archive user: ${error.message || 'Unknown error'}`, 'error')
   }
 }
 
 // ==================== DELETE USER (PERMANENT) ====================
-const deleteUser = async (id: number) => {
+const deleteUser = async (id: string) => {
   const confirm = await Swal.fire({
     title: 'Are you sure?',
     text: 'This user will be permanently deleted.',
@@ -144,8 +142,7 @@ const deleteUser = async (id: number) => {
 }
 
 // ==================== RESTORE USER FROM ARCHIVE ====================
-// You can add this function to your ArchiveUserModal component
-const restoreUser = async (user: any) => {
+const restoreUser = async (user: ArchivedUser) => {
   const confirm = await Swal.fire({
     title: 'Restore User?',
     text: 'This user will be restored to active users.',
@@ -168,7 +165,10 @@ const restoreUser = async (user: any) => {
           email: user.email,
           full_name: user.full_name,
           role: user.role,
-          created_at: user.created_at
+          program: user.program,
+          other_program: user.other_program,
+          created_at: user.created_at,
+          updated_at: new Date().toISOString()
         }
       ])
 
@@ -184,6 +184,7 @@ const restoreUser = async (user: any) => {
 
     Swal.fire('Restored!', 'User has been restored successfully.', 'success')
     await fetchArchivedUsers() // Refresh archived users list
+    await fetchUsers() // Refresh active users list
   } catch (error) {
     console.error('Error restoring user:', error)
     Swal.fire('Error', 'Failed to restore user', 'error')
@@ -191,13 +192,14 @@ const restoreUser = async (user: any) => {
 }
 
 // ==================== EDIT USER MODAL ====================
-const openEditModal = (user: any) => {
+const openEditModal = (user: User) => {
   selectedUser.value = { ...user }
   showEditModal.value = true
 }
 
 const closeEditModal = () => {
   showEditModal.value = false
+  selectedUser.value = null
 }
 
 const handleUserUpdated = () => {
@@ -245,28 +247,32 @@ const filteredUsers = computed(() => {
     // Search filter
     const searchMatches = 
       user.full_name?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      user.email?.toLowerCase().includes(searchQuery.value.toLowerCase())
+      user.email?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      user.program?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      user.other_program?.toLowerCase().includes(searchQuery.value.toLowerCase())
     
     return roleMatches && searchMatches
   })
 })
 
-// Optional: Keep these if you need them elsewhere, otherwise you can remove them
-const filteredTrainers = computed(() =>
-  users.value.filter(u =>
-    u.role === 'trainer' &&
-    (u.full_name?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-     u.email?.toLowerCase().includes(searchQuery.value.toLowerCase()))
-  )
-)
+// ==================== UTILITY FUNCTIONS ====================
+const getRoleBadgeClass = (role: string) => {
+  switch (role) {
+    case 'trainer': return 'text-blue-600'
+    case 'trainee': return 'text-green-600'
+    default: return 'text-gray-600'
+  }
+}
 
-const filteredTrainees = computed(() =>
-  users.value.filter(u =>
-    u.role === 'trainee' &&
-    (u.full_name?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-     u.email?.toLowerCase().includes(searchQuery.value.toLowerCase()))
-  )
-)
+const getUserInitials = (fullName: string | null) => {
+  if (!fullName) return 'U'
+  return fullName
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+}
 </script>
 
 <template>
@@ -284,16 +290,7 @@ const filteredTrainees = computed(() =>
         ]"
       />
 
-
-      <!-- MOBILE SIDEBAR -->
-      <transition name="fade">
-        <Sidebar
-          v-if="isSidebarOpen"
-          class="fixed inset-y-0 left-0 w-64 bg-[#0f172a] z-50 md:hidden"
-        />
-      </transition>
-
-      <!-- OVERLAY -->
+      <!-- MOBILE SIDEBAR OVERLAY -->
       <div
         v-if="isSidebarOpen"
         class="fixed inset-0 bg-black bg-opacity-40 z-40 md:hidden"
@@ -310,7 +307,7 @@ const filteredTrainees = computed(() =>
               <!-- ROLE FILTER -->
               <select
                 v-model="selectedRole"
-                class="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-green-500"
+                class="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-colors"
               >
                 <option value="all">All Users</option>
                 <option value="trainer">Trainers</option>
@@ -323,7 +320,7 @@ const filteredTrainees = computed(() =>
                   v-model="searchQuery"
                   type="text"
                   placeholder="🔍 Search by name or email..."
-                  class="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-green-500 w-56"
+                  class="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-colors w-56"
                 >
               </div>
             </div>
@@ -334,7 +331,7 @@ const filteredTrainees = computed(() =>
               <button
                 @click="openArchiveModal"
                 title="Archive Users"
-                class="bg-yellow-400 hover:bg-yellow-500 text-white px-4 py-2 rounded-md transition-all flex items-center justify-center hover:scale-110 relative group"
+                class="bg-yellow-400 hover:bg-yellow-500 text-white px-4 py-2 rounded-md transition-all flex items-center justify-center hover:scale-105 relative group"
               >
                 <FolderArchive :size="20" />
                 <!-- Tooltip -->
@@ -347,7 +344,7 @@ const filteredTrainees = computed(() =>
               <button
                 @click="showAddModal = true"
                 title="Add New User"
-                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-all flex items-center justify-center hover:scale-110 relative group"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-all flex items-center justify-center hover:scale-105 relative group"
               >
                 <UserPlus :size="20" />
                 <!-- Tooltip -->
@@ -359,11 +356,12 @@ const filteredTrainees = computed(() =>
           </div>
 
           <!-- ARCHIVE MODAL -->
-          <ArchiveUserModal
+          <ArchiveModal
             :show="showArchiveModal"
             :archived-users="archivedUsers"
             @close="closeArchiveModal"
             @restore="restoreUser"
+            @refresh="fetchUsers"
           />
 
           <!-- ADD USER MODAL -->
@@ -384,37 +382,56 @@ const filteredTrainees = computed(() =>
                 selectedRole === 'all' ? 'All Users' : 
                 selectedRole === 'trainer' ? 'Trainers' : 'Trainees'
               }}
+              <span class="text-sm text-gray-500 ml-2">({{ filteredUsers.length }})</span>
             </h2>
-            <div class="overflow-x-auto border rounded-lg">
-              <table class="min-w-full">
-                <thead class="bg-green-100 text-gray-700">
+            <div class="overflow-x-auto border border-gray-200 rounded-lg">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-green-50 text-gray-700">
                   <tr>
-                    <th class="py-2 px-3 text-left">Full Name</th>
-                    <th class="py-2 px-3 text-left">Date Created</th>
-                    <th class="py-2 px-3 text-left">Email</th>
-                    <th class="py-2 px-3 text-left">Role</th>
-                    <th class="py-2 px-3 text-left">Action</th>
+                    <th class="py-3 px-4 text-left text-sm font-semibold">Full Name</th>
+                    <th class="py-3 px-4 text-left text-sm font-semibold">Date Created</th>
+                    <th class="py-3 px-4 text-left text-sm font-semibold">Email</th>
+                    <th class="py-3 px-4 text-left text-sm font-semibold">Role</th>
+                    <th class="py-3 px-4 text-left text-sm font-semibold">Program</th>
+                    <th class="py-3 px-4 text-left text-sm font-semibold">Actions</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody class="divide-y divide-gray-200">
                   <tr
                     v-for="user in filteredUsers"
                     :key="user.id"
-                    class="border-b hover:bg-gray-50"
+                    class="hover:bg-gray-50 transition-colors"
                   >
-                    <td class="py-2 px-3">{{ user.full_name }}</td>
-                    <td class="py-2 px-3">{{ formatDate(user.created_at) }}</td>
-                    <td class="py-2 px-3">{{ user.email }}</td>
-                    <td class="py-2 px-3 font-semibold capitalize" 
-                        :class="user.role === 'trainer' ? 'text-blue-600' : 'text-green-600'">
-                      {{ user.role }}
+                    <td class="py-3 px-4">
+                      <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                          <span class="text-blue-600 text-xs font-medium">
+                            {{ getUserInitials(user.full_name) }}
+                          </span>
+                        </div>
+                        <span class="font-medium text-gray-900">{{ user.full_name || 'No Name' }}</span>
+                      </div>
                     </td>
-                    <td class="py-2 px-3">
-                      <div class="flex items-center space-x-3">
+                    <td class="py-3 px-4 text-sm text-gray-600">{{ formatDate(user.created_at) }}</td>
+                    <td class="py-3 px-4 text-sm text-gray-600">{{ user.email }}</td>
+                    <td class="py-3 px-4">
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize" 
+                            :class="getRoleBadgeClass(user.role)">
+                        {{ user.role }}
+                      </span>
+                    </td>
+                    <td class="py-3 px-4 text-sm text-gray-600">
+                      <div>
+                        <div>{{ user.program }}</div>
+                        <div v-if="user.other_program" class="text-xs text-gray-400">{{ user.other_program }}</div>
+                      </div>
+                    </td>
+                    <td class="py-3 px-4">
+                      <div class="flex items-center gap-2">
                         <button
                           @click="openEditModal(user)"
                           title="Edit"
-                          class="text-blue-600 hover:text-blue-700 hover:scale-125 transition-transform relative group inline-flex items-center justify-center"
+                          class="text-blue-600 hover:text-blue-700 hover:scale-110 transition-transform relative group p-1 rounded hover:bg-blue-50"
                         >
                           <SquarePen :size="18" />
                           <span class="absolute bottom-full mb-2 px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
@@ -425,7 +442,7 @@ const filteredTrainees = computed(() =>
                         <button
                           @click="archiveUser(user)"
                           title="Archive"
-                          class="text-yellow-500 hover:text-yellow-600 hover:scale-125 transition-transform relative group inline-flex items-center justify-center"
+                          class="text-yellow-500 hover:text-yellow-600 hover:scale-110 transition-transform relative group p-1 rounded hover:bg-yellow-50"
                         >
                           <FolderArchive :size="18" />
                           <span class="absolute bottom-full mb-2 px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
@@ -436,11 +453,19 @@ const filteredTrainees = computed(() =>
                     </td>
                   </tr>
                   <tr v-if="filteredUsers.length === 0">
-                    <td colspan="5" class="p-4 text-center text-gray-500">
-                      No {{ 
-                        selectedRole === 'all' ? 'users' : 
-                        selectedRole === 'trainer' ? 'trainers' : 'trainees'
-                      }} found
+                    <td colspan="6" class="p-8 text-center text-gray-500">
+                      <div class="flex flex-col items-center justify-center">
+                        <FolderArchive :size="48" class="text-gray-300 mb-2" />
+                        <p class="text-lg font-medium text-gray-400">
+                          No {{ 
+                            selectedRole === 'all' ? 'users' : 
+                            selectedRole === 'trainer' ? 'trainers' : 'trainees'
+                          }} found
+                        </p>
+                        <p class="text-sm text-gray-400 mt-1">
+                          {{ searchQuery ? 'Try adjusting your search' : 'No users match your criteria' }}
+                        </p>
+                      </div>
                     </td>
                   </tr>
                 </tbody>
